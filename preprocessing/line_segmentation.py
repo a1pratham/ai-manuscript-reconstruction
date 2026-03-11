@@ -1,31 +1,27 @@
 import cv2
-import numpy as np
 
 def segment_lines(image):
 
-    # invert image so text becomes white
-    inverted = 255 - image
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (40,5))
 
-    # sum pixels horizontally
-    horizontal_projection = np.sum(inverted, axis=1)
+    dilated = cv2.dilate(image, kernel, iterations=1)
 
-    threshold = np.max(horizontal_projection) * 0.1
+    contours, _ = cv2.findContours(
+        dilated,
+        cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE
+    )
 
-    lines = []
-    start = None
+    line_images = []
 
-    for i, value in enumerate(horizontal_projection):
+    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1])
 
-        if value > threshold and start is None:
-            start = i
+    for c in contours:
 
-        elif value <= threshold and start is not None:
-            end = i
+        x, y, w, h = cv2.boundingRect(c)
 
-            if end - start > 10:
-                line = image[start:end, :]
-                lines.append(line)
+        if h > 20:
+            line = image[y:y+h, x:x+w]
+            line_images.append(line)
 
-            start = None
-
-    return lines
+    return line_images
