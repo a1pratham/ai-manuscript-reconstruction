@@ -12,16 +12,33 @@ def segment_lines(image):
         cv2.CHAIN_APPROX_SIMPLE
     )
 
-    line_images = []
-
-    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[1])
+    boxes = []
 
     for c in contours:
 
         x, y, w, h = cv2.boundingRect(c)
 
-        if h > 20:
-            line = image[y:y+h, x:x+w]
-            line_images.append(line)
+        if h < 20 or w < 50:
+            continue
+
+        boxes.append((x, y, w, h))
+
+    # sort first by Y, then by X
+    boxes = sorted(boxes, key=lambda b: (b[1], b[0]))
+
+    line_images = []
+
+    padding = 5
+
+    for x, y, w, h in boxes:
+
+        y1 = max(y - padding, 0)
+        y2 = y + h + padding
+        x1 = max(x - padding, 0)
+        x2 = x + w + padding
+
+        line = image[y1:y2, x1:x2]
+
+        line_images.append(line)
 
     return line_images

@@ -1,9 +1,8 @@
 import cv2
 
-def preprocess_image(image_path):
+def preprocess_image(image):
 
-    image = cv2.imread(image_path)
-
+    # convert to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # increase contrast
