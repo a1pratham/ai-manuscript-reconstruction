@@ -1,8 +1,8 @@
 import cv2
 
 def segment_lines(image):
-
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (40,5))
+    # INCREASED from 40 to 150 to bridge large horizontal gaps
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (150, 5)) 
 
     dilated = cv2.dilate(image, kernel, iterations=1)
 
@@ -11,6 +11,8 @@ def segment_lines(image):
         cv2.RETR_EXTERNAL,
         cv2.CHAIN_APPROX_SIMPLE
     )
+
+    # ... (keep the rest of your segment_lines code exactly the same)
 
     boxes = []
 

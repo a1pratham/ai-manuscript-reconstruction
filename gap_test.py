@@ -33,6 +33,7 @@ full_df = full_df.sort_values(["line_id", "left"])
 
 print("\n--- GAP TAGGED TEXT ---\n")
 
-gap_text = detect_gaps(full_df)
+# Tweak the 80 to match the scale of your specific test.png
+gap_text = detect_gaps(full_df, physical_gap_threshold=80)
 
 print(gap_text)
