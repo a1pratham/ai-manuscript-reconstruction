@@ -1,40 +1,57 @@
 import pandas as pd
+import re
+from spellchecker import SpellChecker # NEW IMPORT
 
-def detect_gaps(df, char_threshold=70, word_threshold=40, physical_gap_threshold=80):
+# Initialize the dictionary
+spell = SpellChecker()
+# Add custom words that the dictionary shouldn't delete
+# The future setup
+# def detect_gaps(df, custom_vocab=[], char_threshold=75, word_threshold=45):
+#     spell = SpellChecker()
+#     if custom_vocab:
+#         spell.word_frequency.load_words(custom_vocab)
+    # ... the rest of your working code
+
+def detect_gaps(df, char_threshold=75, word_threshold=45, physical_gap_threshold=80):
     result = []
     
     prev_right = None
     prev_line = None
 
-    # 1. DYNAMICALLY calculate the median width of a word in THIS specific image
-    # We use median instead of mean so tiny words like "a" or "I" don't skew the math
     valid_words = df[df["text"].str.strip() != ""]
     if not valid_words.empty:
         median_word_width = valid_words["width"].median()
     else:
-        median_word_width = 50 # Fallback just in case the page is totally blank
+        median_word_width = 50 
 
     for _, row in df.iterrows():
         word = str(row["text"]).strip()
-        if not word or word == "nan":
+        
+        if not word or word == "nan" or re.fullmatch(r'[_\-\|\[\]/\\]+', word):
+            continue
+
+        # Clean off any box lines or hallucinated punctuation like that rogue "!"
+        # We target specific garbage like |, _, [, ], and ! but leave commas alone
+        clean_word = re.sub(r'^[_\-\|\[\]/\\!]+|[_\-\|\[\]/\\!]+$', '', word)
+        
+        if not clean_word:
             continue
 
         conf = float(row["conf"])
         left = int(row["left"])
         width = int(row["width"])
-        line = int(row["line_id"])
+        
+        tess_line = int(row.get("line_num", 0))
+        current_line_id = f"{row.get('line_id', 0)}_{tess_line}"
 
-        if prev_line is not None and line != prev_line:
+        if prev_line is not None and current_line_id != prev_line:
             result.append("\n")
             prev_right = None
 
-        # 2. Use the dynamic width for the estimation
         if prev_right is not None:
             gap = left - prev_right
             
             if gap > physical_gap_threshold:
-                # Divide the gap by the ACTUAL median word width of the document
-                # Using round() instead of // gives a much more accurate estimate
                 estimated_missing = max(1, round(gap / median_word_width))
                 
                 if estimated_missing > 1:
@@ -43,16 +60,29 @@ def detect_gaps(df, char_threshold=70, word_threshold=40, physical_gap_threshold
                     result.append("[WORD_GAP]")
 
         if conf < word_threshold:
-            result.append("[WORD_GAP]") 
+            estimated_damaged_words = max(1, round(width / median_word_width))
+            if estimated_damaged_words > 1:
+                result.append(f"[{estimated_damaged_words}_WORD_GAPS]")
+            else:
+                result.append("[WORD_GAP]")
+                
         elif conf < char_threshold:
-            result.append(word[:-1] + "[CHAR_GAP]")
+            # NEW LOGIC: Check if it's a real word.
+            # If it's gibberish like "ka" or "thea", nuke it into a WORD_GAP.
+            if clean_word.lower() in spell:
+                result.append(clean_word[:-1] + "[CHAR_GAP]")
+            else:
+                result.append("[WORD_GAP]")
         else:
-            result.append(word)
+            result.append(clean_word)
 
         prev_right = left + width
-        prev_line = line
+        prev_line = current_line_id
 
     final_text = " ".join(result)
-    final_text = final_text.replace(" \n ", "\n").replace("\n ", "\n")
     
-    return final_text
+    final_text = re.sub(r' +', ' ', final_text) 
+    final_text = re.sub(r'(\[WORD_GAP\]\s*)+', '[WORD_GAP] ', final_text)
+    final_text = final_text.replace(" \n ", "\n").replace("\n ", "\n").replace(" \n", "\n")
+    
+    return final_text.strip()

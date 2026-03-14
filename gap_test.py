@@ -6,7 +6,6 @@ from preprocessing.line_segmentation import segment_lines
 from ocr.ocr_engine import run_ocr
 from ocr.gap_detection import detect_gaps
 
-
 image = cv2.imread("test.png")
 
 processed = preprocess_image(image)
@@ -19,21 +18,35 @@ all_ocr = []
 for i, line in enumerate(lines):
 
     df = run_ocr(line)
+    
+    # Make sure the dataframe isn't completely empty before appending
+    if df is not None and not df.empty:
+        # add line number so we can group crops later
+        df["line_id"] = i
+        all_ocr.append(df)
 
-    # add line number so we can sort later
-    df["line_id"] = i
+if all_ocr:
+    # combine OCR results
+    full_df = pd.concat(all_ocr)
 
-    all_ocr.append(df)
+    # 1. Safely build the sorting columns
+    # We prioritize Tesseract's natural reading order over a blind X-coordinate sort
+    sort_cols = ["line_id"]
+    for col in ["block_num", "par_num", "line_num", "word_num"]:
+        if col in full_df.columns:
+            sort_cols.append(col)
+        elif col == "word_num" and "left" in full_df.columns:
+            # Fallback if standard pytesseract columns aren't perfectly matching
+            sort_cols.append("left")
 
-# combine OCR results
-full_df = pd.concat(all_ocr)
+    # 2. Sort words correctly to prevent "zippering"
+    full_df = full_df.sort_values(sort_cols)
 
-# sort words correctly
-full_df = full_df.sort_values(["line_id", "left"])
+    print("\n--- GAP TAGGED TEXT ---\n")
 
-print("\n--- GAP TAGGED TEXT ---\n")
+    # Call detect_gaps
+    gap_text = detect_gaps(full_df, word_threshold=45, char_threshold=75)
 
-# Tweak the 80 to match the scale of your specific test.png
-gap_text = detect_gaps(full_df, physical_gap_threshold=80)
-
-print(gap_text)
+    print(gap_text)
+else:
+    print("No text or lines detected in the image.")
