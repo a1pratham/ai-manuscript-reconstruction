@@ -1,0 +1,16 @@
+Project Journal: Day 6
+The "Whack-a-Mole" Breakthrough
+
+Days 4 & 5 Recap: I didn't journal because the gap detection was incredibly difficult. Fighting with bounding boxes and Tesseract OCR felt like hitting a wall, as the "blast radius" of digital shapes kept breaking the engine.
+
+Today’s Milestone: Finally completed Phase 1: Damage Detection.
+
+Technical Wins:
+
+Heuristic Math: Built a script that measures pixel distances to guess the number of missing words.
+
+Spellchecker Guardrails: Integrated pyspellchecker to kill OCR "hallucinations" (garbage text) while keeping real words safe.
+
+Multilingual Support: Successfully processed both Modern English and 1,000-year-old Anglo-Saxon by loading a custom 42,000-word Old English dictionary from GitHub.
+
+Status: Phase 1 is officially bilingual and almost stable.

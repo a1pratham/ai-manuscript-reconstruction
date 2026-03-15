@@ -6,7 +6,13 @@ from preprocessing.line_segmentation import segment_lines
 from ocr.ocr_engine import run_ocr
 from ocr.gap_detection import detect_gaps
 
-image = cv2.imread("test.png")
+# 1. Point to the new handwriting image from the IAM dataset
+image_path = "datasets/iam_lines/iam_0.png"
+image = cv2.imread(image_path)
+
+if image is None:
+    print(f"Error: Could not load image at {image_path}. Make sure the path is correct.")
+    exit()
 
 processed = preprocess_image(image)
 
@@ -44,8 +50,8 @@ if all_ocr:
 
     print("\n--- GAP TAGGED TEXT ---\n")
 
-    # Call detect_gaps
-    gap_text = detect_gaps(full_df, word_threshold=45, char_threshold=75)
+    # 3. Call detect_gaps (Defaults to Modern English for the IAM dataset)
+    gap_text = detect_gaps(full_df)
 
     print(gap_text)
 else:
