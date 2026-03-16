@@ -1,0 +1,9 @@
+Day 8: The Handwriting Pivot
+
+Tried feeding real cursive to Tesseract today and it completely bombed—just spat out a massive wall of gap tags. Turns out standard OCR can't handle connected letters at all.
+
+Switched gears and brought in Microsoft's TrOCR AI. It actually read the messy handwriting perfectly! We tried building a complicated "hybrid" engine to combine both tools, but it was way too slow and clunky.
+
+I made the call to just keep it simple: the app will just have a toggle for the user to choose "Printed" (runs Tesseract) or "Handwritten" (runs TrOCR). It keeps the model way lighter and faster. I dumped the hybrid code into an archive folder just so I don't lose the logic, but the extraction phase is officially done.
+
+Ready for Phase 2 tomorrow!
